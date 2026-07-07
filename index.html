@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Drip Drop | 로스터리 카페 지도</title>
-    <meta name="description" content="현재 위치 주변의 로스터리 카페를 지도와 리스트로 탐색하세요.">
+    <meta name="description" content="검증된 로스터리 카페를 지도와 리스트로 탐색하는 Drip Drop입니다.">
     <link rel="preconnect" href="https://unpkg.com">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="css/reset.css">
@@ -15,35 +15,22 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#map" aria-label="Drip Drop 홈">
-          <span class="brand-mark">DD</span>
-          <span><strong>Drip Drop</strong><small>로스터리 카페 지도</small></span>
-        </a>
-        <form id="searchForm" class="search" role="search">
-          <label class="sr-only" for="searchInput">카페명, 주소, 메뉴 검색</label>
-          <input id="searchInput" type="search" placeholder="카페명, 주소, 필터 커피, 원두 검색">
-          <button type="submit">검색</button>
-        </form>
-        <nav class="nav-actions" aria-label="주요 메뉴">
-          <button class="icon-button" id="locateButton" type="button" title="현재 위치">⌖</button>
-          <button class="text-button" id="loginButton" type="button">Google 로그인</button>
-          <button class="text-button hidden" id="logoutButton" type="button">로그아웃</button>
-        </nav>
+        <a class="brand" href="#map" aria-label="Drip Drop 홈"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" role="img"><path d="M10 20h24v10a10 10 0 0 1-10 10h-4a10 10 0 0 1-10-10V20Z"/><path d="M34 23h3a5 5 0 0 1 0 10h-3"/><path d="M15 14c2-3 4-5 1-9M24 14c2-3 4-5 1-9"/><path d="M9 40h28"/></svg></span><span><strong>Drip Drop</strong><small>검증된 로스터리 카페 지도</small></span></a>
+        <form id="searchForm" class="search" role="search"><label class="sr-only" for="searchInput">카페명, 지역, 메뉴 검색</label><span class="search-icon" aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="카페명, 지역, 필터 커피, 원두 검색"><button type="submit">검색</button></form>
+        <nav class="nav-actions" aria-label="주요 메뉴"><button class="icon-button" id="locateButton" type="button" title="현재 위치"><span aria-hidden="true">◎</span><span class="sr-only">현재 위치</span></button><button class="text-button" id="loginButton" type="button">Google 로그인</button><button class="text-button hidden" id="logoutButton" type="button">로그아웃</button></nav>
       </header>
       <main class="workspace">
         <aside class="sidebar" aria-label="검색과 목록">
-          <section class="panel filter-panel">
-            <div class="section-heading"><h1>로스터리 찾기</h1><div class="segmented" role="tablist" aria-label="보기 방식"><button id="mapViewButton" class="active" type="button">지도</button><button id="listViewButton" type="button">리스트</button></div></div>
-            <div class="filters" aria-label="필터"><label><input type="checkbox" value="beans" data-filter> 원두 구매</label><label><input type="checkbox" value="filter" data-filter> 필터 커피</label><label><input type="checkbox" value="open" data-filter> 영업 중</label><label><input type="checkbox" value="parking" data-filter> 주차</label><label><input type="checkbox" value="wifi" data-filter> Wi-Fi</label></div>
-          </section>
+          <section class="welcome-card" id="locationPrompt"><button class="close-soft" id="dismissLocationPrompt" type="button" aria-label="위치 안내 닫기">×</button><div class="mini-plant" aria-hidden="true">☕</div><h1>내 주변 카페를 보려면 위치 접근이 필요해요</h1><p>접속하면 브라우저 위치 권한 요청이 표시됩니다. 허용하면 현재 위치를 중심으로 지도를 보여드려요.</p><div class="prompt-actions"><button class="wide-button" id="allowLocationButton" type="button">위치 허용하기</button><button class="ghost-button" id="laterLocationButton" type="button">나중에 하기</button></div></section>
+          <section class="panel filter-panel"><div class="section-heading"><div><p class="eyebrow">Roadmap View</p><h2>검증 카페 찾기</h2></div><div class="segmented" role="tablist" aria-label="보기 방식"><button id="mapViewButton" class="active" type="button">지도</button><button id="listViewButton" type="button">리스트</button></div></div><div class="filters" aria-label="필터"><label><input type="checkbox" value="open" data-filter> 운영 중</label><label><input type="checkbox" value="beans" data-filter> 원두 구매</label><label><input type="checkbox" value="filter" data-filter> 필터/드립 커피</label><label><input type="checkbox" value="parking" data-filter> 주차</label><label><input type="checkbox" value="wifi" data-filter> Wi-Fi</label></div><p class="helper-copy">관리자가 네이버 지도에서 실존 여부를 확인한 카페만 표시됩니다.</p></section>
           <section class="panel account-panel" id="accountPanel"><h2>내 취향</h2><div id="signedOutState" class="muted">로그인하면 찜, 취향 프로필, 추천을 사용할 수 있습니다.</div><div id="signedInState" class="hidden"><p id="userSummary"></p><div class="profile-grid"><label>선호 향미 <input id="tasteInput" placeholder="예: 꽃향, 베리, 고소함"></label><label>보유 원두 <input id="ownedBeansInput" placeholder="예: 에티오피아 내추럴"></label><label>갖고 싶은 원두 <input id="wantedBeansInput" placeholder="예: 파나마 게이샤"></label></div><button class="wide-button" id="saveProfileButton" type="button">프로필 저장</button></div></section>
-          <section class="panel"><div class="section-heading"><h2>추천</h2><button id="refreshRecommendationsButton" type="button">갱신</button></div><div id="recommendationsList" class="compact-list"></div></section>
-          <section class="panel list-panel"><div class="section-heading"><h2>카페 목록</h2><span id="resultCount" class="badge">0</span></div><div id="cafeList" class="cafe-list"></div></section>
+          <section class="panel"><div class="section-heading"><h2>취향 추천</h2><button id="refreshRecommendationsButton" type="button">갱신</button></div><div id="recommendationsList" class="compact-list"></div></section>
+          <section class="panel list-panel"><div class="section-heading"><h2>검증된 카페</h2><span id="resultCount" class="badge">0</span></div><div id="cafeList" class="cafe-list"></div></section>
         </aside>
-        <section class="map-stage" aria-label="지도"><div id="map"></div><article id="detailPanel" class="detail-panel" aria-live="polite"></article></section>
+        <section class="map-stage" aria-label="지도"><div class="map-caption"><span>Roadmap</span><strong>현재 위치 중심</strong></div><div id="map"></div><article id="detailPanel" class="detail-panel" aria-live="polite"></article></section>
         <section id="listStage" class="list-stage hidden" aria-label="리스트 보기"><div id="wideCafeList" class="wide-list"></div></section>
       </main>
-      <section class="drawer" id="communityDrawer" aria-label="커뮤니티와 알림"><div class="drawer-tabs"><button data-drawer-tab="favorites" class="active" type="button">찜</button><button data-drawer-tab="community" type="button">커뮤니티</button><button data-drawer-tab="reviews" type="button">내 리뷰</button><button data-drawer-tab="alerts" type="button">알림</button><button data-drawer-tab="report" type="button">연간 리포트</button><button data-drawer-tab="admin" id="adminTabButton" class="hidden" type="button">관리자</button></div><div id="drawerContent" class="drawer-content"></div></section>
+      <section class="drawer" id="communityDrawer" aria-label="커뮤니티와 알림"><div class="drawer-tabs"><button data-drawer-tab="favorites" class="active" type="button">찜 목록</button><button data-drawer-tab="community" type="button">커뮤니티</button><button data-drawer-tab="reviews" type="button">내 리뷰</button><button data-drawer-tab="alerts" type="button">알림</button><button data-drawer-tab="report" type="button">연간 리포트</button><button data-drawer-tab="admin" id="adminTabButton" class="hidden" type="button">관리자</button></div><div id="drawerContent" class="drawer-content"></div></section>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module" src="js/app.js"></script>
