@@ -33,3 +33,9 @@ GitHub Pages 배포는 `.github/workflows/deploy.yml`에서 처리합니다. `ma
 ## 보안
 
 `.env` 파일은 로컬 전용이며 GitHub에 올리지 않습니다. Firebase Web config는 공개 가능한 클라이언트 설정이지만, Firestore Rules와 관리자 권한 검증이 반드시 필요합니다.
+
+## 운영 문서
+
+- `docs/FIREBASE_SETUP.md`: Firebase 로그인, Firestore, 관리자 권한 설정
+- `docs/DATA_SCHEMA.md`: Firestore 데이터 구조
+- `docs/ADMIN_GUIDE.md`: 관리자 카페 등록 기준과 입력 방식
