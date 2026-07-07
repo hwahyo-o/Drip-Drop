@@ -1,0 +1,6 @@
+import { auth, db, doc, getDoc, googleProvider, onAuthStateChanged, serverTimestamp, setDoc, signInWithPopup, signOut } from "./firebase.js";
+let currentUser=null;let currentProfile=null;
+export function watchAuth(onChange){return onAuthStateChanged(auth,async(user)=>{currentUser=user;currentProfile=user?await ensureUserProfile(user):null;onChange(currentUser,currentProfile);});}
+export async function loginWithGoogle(){await signInWithPopup(auth,googleProvider);}export async function logout(){await signOut(auth);}export function getCurrentUser(){return currentUser;}export function getCurrentProfile(){return currentProfile;}
+export async function saveUserTasteProfile(values){if(!currentUser)throw new Error("로그인이 필요합니다.");const payload={tasteProfile:values,updatedAt:serverTimestamp()};await setDoc(doc(db,"users",currentUser.uid),payload,{merge:true});currentProfile={...currentProfile,...payload};return currentProfile;}
+async function ensureUserProfile(user){const ref=doc(db,"users",user.uid);const snapshot=await getDoc(ref);if(snapshot.exists())return {uid:user.uid,...snapshot.data()};const profile={uid:user.uid,displayName:user.displayName||"",email:user.email||"",photoURL:user.photoURL||"",role:"user",tasteProfile:{taste:"",ownedBeans:"",wantedBeans:""},createdAt:serverTimestamp()};await setDoc(ref,profile,{merge:true});return profile;}
