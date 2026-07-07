@@ -25,12 +25,6 @@ export function renderCafeMarkers(cafes, onCafeSelect) {
   });
 }
 
-export function fitToCafes(cafes) {
-  const points = cafes.filter((cafe) => cafe.lat && cafe.lng).map((cafe) => [Number(cafe.lat), Number(cafe.lng)]);
-  if (!map || !points.length) return;
-  map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
-}
-
 export function locateUser() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
