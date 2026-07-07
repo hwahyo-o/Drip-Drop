@@ -43,3 +43,4 @@ GitHub Pages 배포는 `.github/workflows/deploy.yml`에서 처리합니다. `ma
 - `docs/DATA_SCHEMA.md`: Firestore 데이터 구조
 - `docs/ADMIN_GUIDE.md`: 관리자 카페 등록 기준과 입력 방식
 - `docs/DEPLOYMENT_QA.md`: GitHub Pages 배포 후 직접 확인할 체크리스트
+- `docs/IMPLEMENTATION_AUDIT.md`: 개선 요청별 구현 증거와 감사 기록
