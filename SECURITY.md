@@ -3,7 +3,7 @@
 ## Secrets
 
 - `.env` and `.env.*` are local-only files and must not be committed.
-- Do not expose IPstack keys directly in browser JavaScript.
+- Do not expose IPstack keys directly in browser JavaScript, GitHub Pages artifacts, or any committed config file. IPstack must be called only from a trusted backend/proxy if it is needed later.
 - Do not commit live Google API keys or Firebase config values. `js/firebaseConfig.js` is a safe template in the repository, and GitHub Actions overwrites it from repository secrets during Pages deployment.
 - Firebase Web API keys are not sufficient authorization by themselves, but exposed keys can still be abused if Google Cloud API restrictions, Firebase Auth authorized domains, or Firestore Rules are weak.
 
