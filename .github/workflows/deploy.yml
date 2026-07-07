@@ -49,8 +49,14 @@ jobs:
           const required = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"];
           const missing = required.filter((key) => !config[key]);
           if (missing.length) {
-            console.error(`Missing GitHub Actions secrets for Firebase config: ${missing.join(", ")}`);
-            process.exit(1);
+            console.warn(`Missing GitHub Actions secrets for Firebase config: ${missing.join(", ")}. Deploying public map UI without Firebase login.`);
+            config.apiKey = "";
+            config.authDomain = "";
+            config.projectId = "";
+            config.storageBucket = "";
+            config.messagingSenderId = "";
+            config.appId = "";
+            config.measurementId = "";
           }
           const output = `export const firebaseConfig = ${JSON.stringify(config, null, 2)};\n\nexport function hasFirebaseConfig() {\n  return Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId);\n}\n`;
           fs.writeFileSync("js/firebaseConfig.js", output);
