@@ -1,8 +1,14 @@
-import { collection, db, doc, getDocs, query, serverTimestamp, setDoc, where } from "./firebase.js";
+import { collection, db, doc, getDocs, isFirebaseReady, query, serverTimestamp, setDoc, where } from "./firebase.js";
 
 let cachedCafes = [];
 
 export async function loadCafes() {
+  if (!isFirebaseReady()) {
+    console.warn("Firebase 설정이 비어 있어 검증 카페 데이터를 불러오지 못했습니다.");
+    cachedCafes = await loadSeedCafes();
+    return cachedCafes;
+  }
+
   try {
     const verifiedCafeQuery = query(
       collection(db, "cafes"),
@@ -15,7 +21,7 @@ export async function loadCafes() {
       .filter(isPublicVerifiedCafe);
   } catch (error) {
     console.warn("Firestore verified cafe data is unavailable. No unverified seed data will be shown.", error);
-    cachedCafes = [];
+    cachedCafes = await loadSeedCafes();
   }
 
   return cachedCafes;
@@ -30,6 +36,7 @@ export async function loadSeedCafes() {
 }
 
 export async function saveCafeFromAdmin(cafe) {
+  if (!isFirebaseReady()) throw new Error("Firebase 설정이 필요합니다.");
   const id = cafe.id || crypto.randomUUID();
   const payload = {
     ...cafe,
