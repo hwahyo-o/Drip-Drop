@@ -6,7 +6,9 @@ import {
   getDoc,
   getRedirectResult,
   googleProvider,
+  isFirebaseReady,
   onAuthStateChanged,
+  requireFirebase,
   serverTimestamp,
   setDoc,
   signInWithPopup,
@@ -19,6 +21,13 @@ let currentProfile = null;
 let redirectHandled = false;
 
 export function watchAuth(onChange) {
+  if (!isFirebaseReady()) {
+    currentUser = null;
+    currentProfile = null;
+    onChange(currentUser, currentProfile);
+    return () => {};
+  }
+
   consumeRedirectResult();
   return onAuthStateChanged(auth, async (user) => {
     currentUser = user;
@@ -28,6 +37,7 @@ export function watchAuth(onChange) {
 }
 
 export async function loginWithGoogle() {
+  requireFirebase();
   try {
     await signInWithPopup(auth, googleProvider);
   } catch (error) {
@@ -40,6 +50,7 @@ export async function loginWithGoogle() {
 }
 
 export async function logout() {
+  requireFirebase();
   await signOut(auth);
 }
 
@@ -53,6 +64,9 @@ export function getCurrentProfile() {
 
 export function getAuthErrorMessage(error) {
   const code = error?.code || "";
+  if (code === "firebase/not-configured") {
+    return "Firebase 설정이 배포에 주입되지 않아 Google 로그인을 시작할 수 없습니다. GitHub Actions secrets 등록과 Pages 재배포 상태를 확인해 주세요.";
+  }
   if (code === "auth/unauthorized-domain") {
     return "Firebase Authentication 승인 도메인에 현재 배포 도메인이 등록되어 있지 않습니다. Firebase Console > Authentication > Settings > Authorized domains에 GitHub Pages 도메인을 추가해 주세요.";
   }
@@ -69,6 +83,7 @@ export function getAuthErrorMessage(error) {
 }
 
 export async function saveUserTasteProfile(values) {
+  requireFirebase();
   if (!currentUser) throw new Error("로그인이 필요합니다.");
   const payload = {
     tasteProfile: values,
@@ -80,7 +95,7 @@ export async function saveUserTasteProfile(values) {
 }
 
 async function consumeRedirectResult() {
-  if (redirectHandled) return;
+  if (redirectHandled || !isFirebaseReady()) return;
   redirectHandled = true;
   try {
     await getRedirectResult(auth);
@@ -98,6 +113,7 @@ function shouldUseRedirectFallback(error) {
 }
 
 async function ensureUserProfile(user) {
+  requireFirebase();
   const ref = doc(db, "users", user.uid);
   const snapshot = await getDoc(ref);
   const configuredRole = getInitialRoleForEmail(user.email);
