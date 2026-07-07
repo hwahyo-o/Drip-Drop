@@ -26,17 +26,13 @@ import {
   updateDoc,
   where
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { firebaseConfig, hasFirebaseConfig } from "./firebaseConfig.js";
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyD_lTqxOS064xV-8eUX5Rr1ldllA4HDbMQ",
-  authDomain: "dd-project-34af3.firebaseapp.com",
-  projectId: "dd-project-34af3",
-  storageBucket: "dd-project-34af3.firebasestorage.app",
-  messagingSenderId: "16253235956",
-  appId: "1:16253235956:web:f46564b2909240bd4f64a1",
-  measurementId: "G-54JD6XLL4P"
-};
+if (!hasFirebaseConfig()) {
+  throw new Error("Firebase 설정이 비어 있습니다. GitHub Actions secrets 또는 로컬 js/firebaseConfig.js 설정을 확인하세요.");
+}
 
+export { firebaseConfig };
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
