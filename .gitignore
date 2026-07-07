@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+.cache/
+.firebase/
+firebase-debug.log
+*.local
+
+.DS_Store
+Thumbs.db
