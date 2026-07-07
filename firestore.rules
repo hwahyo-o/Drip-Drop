@@ -16,7 +16,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     match /cafes/{cafeId} {
-      allow read: if resource.data.approved == true || isAdmin();
+      allow read: if (resource.data.approved == true && resource.data.naverVerified == true) || isAdmin();
       allow create, update, delete: if isAdmin();
     }
     match /favorites/{favoriteId} {
