@@ -28,22 +28,36 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { firebaseConfig, hasFirebaseConfig } from "./firebaseConfig.js";
 
-if (!hasFirebaseConfig()) {
-  throw new Error("Firebase 설정이 비어 있습니다. GitHub Actions secrets 또는 로컬 js/firebaseConfig.js 설정을 확인하세요.");
+export const firebaseReady = hasFirebaseConfig();
+export const app = firebaseReady ? initializeApp(firebaseConfig) : null;
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+export const googleProvider = firebaseReady ? new GoogleAuthProvider() : null;
+if (googleProvider) googleProvider.setCustomParameters({ prompt: "select_account" });
+
+if (app) {
+  isAnalyticsSupported().then((supported) => {
+    if (supported) {
+      getAnalytics(app);
+    }
+  });
+} else {
+  console.warn("Firebase 설정이 비어 있어 로그인, 찜, 관리자 기능은 비활성화됩니다. 지도와 검색 UI는 계속 사용할 수 있습니다.");
+}
+
+export function isFirebaseReady() {
+  return firebaseReady;
+}
+
+export function requireFirebase() {
+  if (!firebaseReady || !auth || !db) {
+    const error = new Error("Firebase 설정이 비어 있습니다. GitHub Actions secrets 또는 배포 설정을 확인하세요.");
+    error.code = "firebase/not-configured";
+    throw error;
+  }
 }
 
 export { firebaseConfig };
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: "select_account" });
-
-isAnalyticsSupported().then((supported) => {
-  if (supported) {
-    getAnalytics(app);
-  }
-});
 
 export {
   addDoc,
