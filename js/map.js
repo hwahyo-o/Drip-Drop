@@ -11,12 +11,26 @@ const LEAFLET_TILE_STYLE = {
   }
 };
 
+const GEOLOCATION_OPTIONS = {
+  enableHighAccuracy: true,
+  timeout: 15000,
+  maximumAge: 0
+};
+const GEOLOCATION_SAMPLE_MS = 8500;
+const TARGET_ACCURACY_METERS = 45;
+const OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter";
+
 let map;
 let provider = "leaflet";
 let cafeLayer;
+let subwayLayer;
 let cafeMarkers = [];
+let subwayMarkers = [];
 let userMarker;
+let userAccuracyCircle;
 let activeInfoWindow;
+let subwayFetchTimer;
+let lastSubwayBoundsKey = "";
 
 export async function initMap({ onCafeSelect }) {
   if (NAVER_MAP_OPTIONS.useNaverStyleMap) {
@@ -49,25 +63,13 @@ export function renderCafeMarkers(cafes, onCafeSelect) {
 }
 
 export function locateUser() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("현재 브라우저에서 위치 기능을 지원하지 않습니다."));
-      return;
-    }
+  if (!navigator.geolocation) {
+    return Promise.reject(new Error("현재 브라우저에서 위치 기능을 지원하지 않습니다."));
+  }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        };
-        showUserLocation(location);
-        resolve(location);
-      },
-      (error) => reject(error),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+  return getBestBrowserLocation().then((location) => {
+    showUserLocation(location);
+    return location;
   });
 }
 
@@ -126,7 +128,10 @@ function initLeafletMap(onCafeSelect) {
   L.tileLayer(LEAFLET_TILE_STYLE.url, LEAFLET_TILE_STYLE.options).addTo(map);
 
   cafeLayer = L.layerGroup().addTo(map);
+  subwayLayer = L.layerGroup().addTo(map);
   map.on("click", () => onCafeSelect(null));
+  map.on("moveend zoomend", scheduleSubwayStationRefresh);
+  scheduleSubwayStationRefresh();
 }
 
 function buildNaverStyledMapType(maps) {
@@ -191,15 +196,125 @@ function showNaverUserLocation(location) {
     icon: buildNaverIcon("user", "local_cafe", "현재 위치")
   });
   map.setCenter(position);
-  map.setZoom(15);
+  map.setZoom(16);
 }
 
 function showLeafletUserLocation(location) {
+  const latLng = [location.lat, location.lng];
   if (userMarker) userMarker.remove();
-  userMarker = L.marker([location.lat, location.lng], { icon: materialMarkerIcon("user", "local_cafe"), zIndexOffset: 1000 })
+  if (userAccuracyCircle) userAccuracyCircle.remove();
+
+  userAccuracyCircle = L.circle(latLng, {
+    radius: Math.max(Number(location.accuracy) || 0, 18),
+    color: "#2d7c6f",
+    weight: 1,
+    fillColor: "#b7ddd3",
+    fillOpacity: 0.18
+  }).addTo(map);
+
+  userMarker = L.marker(latLng, { icon: materialMarkerIcon("user", "local_cafe"), zIndexOffset: 1000 })
     .addTo(map)
-    .bindPopup("현재 위치");
-  map.setView([location.lat, location.lng], 15);
+    .bindPopup(`현재 위치<br>정확도 약 ${Math.round(location.accuracy || 0)}m`);
+  map.setView(latLng, location.accuracy && location.accuracy <= 120 ? 17 : 15);
+  scheduleSubwayStationRefresh();
+}
+
+function getBestBrowserLocation() {
+  return new Promise((resolve, reject) => {
+    const samples = [];
+    let settled = false;
+    let watchId;
+    let timeoutId;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timeoutId);
+      const best = samples.sort((a, b) => a.accuracy - b.accuracy)[0];
+      if (best) resolve(best);
+      else reject(new Error("현재 위치를 확인하지 못했습니다."));
+    };
+
+    const onPosition = (position) => {
+      const sample = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp
+      };
+      samples.push(sample);
+      if (sample.accuracy <= TARGET_ACCURACY_METERS) finish();
+    };
+
+    const onError = (error) => {
+      if (samples.length) finish();
+      else reject(error);
+    };
+
+    navigator.geolocation.getCurrentPosition(onPosition, onError, GEOLOCATION_OPTIONS);
+    watchId = navigator.geolocation.watchPosition(onPosition, onError, GEOLOCATION_OPTIONS);
+    timeoutId = setTimeout(finish, GEOLOCATION_SAMPLE_MS);
+  });
+}
+
+function scheduleSubwayStationRefresh() {
+  if (provider !== "leaflet" || !map || !subwayLayer) return;
+  clearTimeout(subwayFetchTimer);
+  subwayFetchTimer = setTimeout(refreshSubwayStations, 700);
+}
+
+async function refreshSubwayStations() {
+  if (provider !== "leaflet" || !map || !subwayLayer || map.getZoom() < 13) {
+    clearSubwayMarkers();
+    return;
+  }
+
+  const bounds = map.getBounds();
+  const boundsKey = bounds.toBBoxString();
+  if (boundsKey === lastSubwayBoundsKey) return;
+  lastSubwayBoundsKey = boundsKey;
+
+  const south = bounds.getSouth();
+  const west = bounds.getWest();
+  const north = bounds.getNorth();
+  const east = bounds.getEast();
+  const query = `[out:json][timeout:8];(
+    node["railway"="station"]["station"="subway"](${south},${west},${north},${east});
+    node["railway"="subway_entrance"](${south},${west},${north},${east});
+  );out tags;`;
+
+  try {
+    const response = await fetch(`${OVERPASS_ENDPOINT}?data=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error(`Overpass request failed: ${response.status}`);
+    const payload = await response.json();
+    renderSubwayStations(payload.elements || []);
+  } catch (error) {
+    console.warn("지하철역 정보를 불러오지 못했습니다.", error);
+  }
+}
+
+function renderSubwayStations(elements) {
+  clearSubwayMarkers();
+  const seen = new Set();
+  elements.slice(0, 120).forEach((station) => {
+    if (!station.lat || !station.lon) return;
+    const name = station.tags?.name || station.tags?.["name:ko"] || "지하철역";
+    const key = `${Math.round(station.lat * 10000)}:${Math.round(station.lon * 10000)}:${name}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const marker = L.marker([station.lat, station.lon], { icon: subwayStationIcon() })
+      .bindPopup(`<strong>${escapeHtml(name)}</strong><br>지하철역`);
+    marker.addTo(subwayLayer);
+    subwayMarkers.push(marker);
+  });
+}
+
+function clearSubwayMarkers() {
+  subwayMarkers.forEach((marker) => marker.remove());
+  subwayMarkers = [];
+  subwayLayer?.clearLayers();
 }
 
 function buildNaverIcon(type, symbol, label) {
@@ -218,6 +333,16 @@ function materialMarkerIcon(type, symbol) {
     iconAnchor: [24, 54],
     popupAnchor: [0, -48],
     html: markerHtml(type, symbol, type === "user" ? "현재 위치" : "카페 위치")
+  });
+}
+
+function subwayStationIcon() {
+  return L.divIcon({
+    className: "subway-station-marker",
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -14],
+    html: `<span class="subway-station-symbol material-symbols-outlined" role="img" aria-label="지하철역">subway</span>`
   });
 }
 
