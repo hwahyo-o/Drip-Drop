@@ -1,5 +1,16 @@
 import { NAVER_MAP_CLIENT_ID, NAVER_MAP_OPTIONS } from "./mapConfig.js";
 
+const LEAFLET_TILE_STYLE = {
+  label: "Roadmap",
+  detail: "OpenStreetMap Voyager style",
+  url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  options: {
+    subdomains: "abcd",
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }
+};
+
 let map;
 let provider = "leaflet";
 let cafeLayer;
@@ -24,7 +35,7 @@ export async function initMap({ onCafeSelect }) {
 
   provider = "leaflet";
   initLeafletMap(onCafeSelect);
-  updateMapCaption("Roadmap", "OpenStreetMap fallback");
+  updateMapCaption(LEAFLET_TILE_STYLE.label, LEAFLET_TILE_STYLE.detail);
   return map;
 }
 
@@ -112,10 +123,7 @@ function initLeafletMap(onCafeSelect) {
     [NAVER_MAP_OPTIONS.defaultCenter.lat, NAVER_MAP_OPTIONS.defaultCenter.lng],
     12
   );
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Roadmap'
-  }).addTo(map);
+  L.tileLayer(LEAFLET_TILE_STYLE.url, LEAFLET_TILE_STYLE.options).addTo(map);
 
   cafeLayer = L.layerGroup().addTo(map);
   map.on("click", () => onCafeSelect(null));
