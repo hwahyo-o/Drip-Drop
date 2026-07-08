@@ -1,19 +1,32 @@
 # Map API Security Policy
 
-Drip Drop의 기본 지도는 Leaflet + OpenStreetMap 타일입니다. 이 조합은 브라우저에 API key를 넣지 않아도 동작하므로 GitHub Pages 정적 배포에 가장 안전한 기본값입니다.
+Drip Drop의 기본 지도는 Leaflet + OpenStreetMap 데이터 기반 타일입니다. 현재 배포 버전은 NaverStyleMapTypeOption과 가장 흡사한 밝은 도로 지도 느낌을 위해 key가 필요 없는 CARTO Voyager raster tile을 사용합니다.
+
+중요: IPstack은 지도 타일 API가 아니라 IP 기반 위치 조회 서비스입니다. OpenStreetMap 타일을 불러오기 위해 IPstack key를 브라우저에 넣으면 안 됩니다.
 
 ## Current Decision
 
-- 기본 지도: Leaflet + OpenStreetMap
+- 기본 지도: Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager raster tile
 - 현재 위치: Browser Geolocation API
 - Naver 지도 스타일: 기본 비활성화
 - IPstack: 현재 클라이언트 앱에서 사용하지 않음
+- 지도 타일 API key: 사용하지 않음
+
+## Leaflet Tile Style
+
+현재 Leaflet 지도는 아래 공개 타일을 사용합니다.
+
+```text
+https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png
+```
+
+이 타일은 부드러운 색감, 명확한 도로 표현, 낮은 시각적 밀도 때문에 NaverStyleMapTypeOption의 일반 도로 지도에 더 가까운 경험을 제공합니다. API key가 필요하지 않으므로 GitHub Pages 정적 배포에 적합합니다.
 
 ## Naver Maps JavaScript SDK
 
 Naver Maps JavaScript SDK의 `ncpKeyId`는 브라우저에서 로드되는 공개 식별자입니다. 도메인 제한을 적용해도 최종 HTML/JS 네트워크 요청에서는 보일 수 있습니다.
 
-따라서 Drip Drop에서 "배포 화면에 지도 관련 키가 절대 노출되면 안 된다"는 정책을 우선하면 `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`는 비워 두고 Leaflet + OpenStreetMap만 사용합니다.
+따라서 Drip Drop에서 "배포 화면에 지도 관련 키가 절대 노출되면 안 된다"는 정책을 우선하면 `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`는 비워 두고 Leaflet + OpenStreetMap 데이터 기반 타일만 사용합니다.
 
 Naver 지도가 꼭 필요해질 경우에는 아래 조건을 모두 만족해야 합니다.
 
@@ -34,14 +47,26 @@ IPstack access key는 브라우저 JS, GitHub 저장소, GitHub Pages 배포 산
 - 필요한 최소 필드만 반환
 - 실패 시 Browser Geolocation 또는 수동 위치 검색으로 대체
 
+## Firebase Web Config와 Google 로그인
+
+Firebase Authentication의 Google 로그인은 브라우저에서 Firebase Web config를 사용합니다. 따라서 Google 로그인을 활성화하려면 배포된 `js/firebaseConfig.js`에 Firebase Web config가 주입되어야 합니다.
+
+보안 기준:
+
+- Firebase config 값은 GitHub 저장소 코드에 직접 커밋하지 않음
+- GitHub Actions repository secrets로만 주입
+- Firebase API key는 Google Cloud Console에서 HTTP referrer를 `https://hwahyo-o.github.io/*`로 제한
+- Firestore Rules로 실제 데이터 접근 권한을 차단
+
 ## Deployment QA
 
-배포 후 아래 문자열이 공개 파일에서 검색되지 않아야 합니다.
+배포 후 아래 문자열이 공개 저장소 코드와 지도 관련 파일에서 검색되지 않아야 합니다.
 
 ```text
-AIza
 807e645c14a67c1a626e4955af39262b
 ```
+
+Google 로그인용 Firebase Web API key는 GitHub 저장소에 커밋하지 않습니다. 다만 Firebase 클라이언트 인증을 쓰는 정적 웹앱 특성상, secrets가 정상 주입된 Pages 배포 산출물의 `js/firebaseConfig.js`에서는 제한된 Firebase Web API key가 보일 수 있습니다. 이 값은 Google Cloud HTTP referrer 제한과 Firebase/Firestore Rules로 보호합니다.
 
 확인 대상:
 
