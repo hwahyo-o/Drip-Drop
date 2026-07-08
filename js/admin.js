@@ -13,7 +13,7 @@ export function renderAdminPanel(container, { user, profile, onSaved }) {
       <form id="adminCafeForm" class="admin-grid">
         <div class="admin-two"><label>카페명 <input name="name" required></label><label>네이버 검색명 <input name="naverPlaceName" placeholder="네이버 검색란에는 이 이름만 사용됩니다"></label></div>
         <label>주소 <input name="address" required></label>
-        <div class="admin-two"><label>위도 <input name="lat" required></label><label>경도 <input name="lng" required></label></div>
+        <div class="admin-two"><label>위도 <input name="lat" inputmode="decimal" placeholder="예: 37.56650000000000000000" required></label><label>경도 <input name="lng" inputmode="decimal" placeholder="예: 126.97800000000000000000" required></label></div>
         <div class="admin-two"><label>평점 <input name="rating" type="number" min="0" max="5" step="0.1" value="4.5"></label><label>운영시간 설명 <input name="hoursText" placeholder="예: 매일 10:00-21:00"></label></div>
         <label>메뉴 JSON <textarea name="menus" placeholder='[{"name":"필터 커피","price":"7,000원"}]'></textarea></label>
         <label>태그 <input name="tags" placeholder="필터, 원두판매, 산미"></label>
@@ -26,18 +26,34 @@ export function renderAdminPanel(container, { user, profile, onSaved }) {
   document.querySelector("#adminCafeForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const latText = String(form.get("lat") || "").trim();
+    const lngText = String(form.get("lng") || "").trim();
+    const lat = Number(latText);
+    const lng = Number(lngText);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      alert("위도와 경도는 숫자로 입력해야 합니다.");
+      return;
+    }
+
+    const menus = parseMenus(form.get("menus"));
+    if (!menus) {
+      alert("메뉴 JSON은 [{\"name\":\"필터 커피\",\"price\":\"7,000원\"}] 형식의 배열이어야 합니다.");
+      return;
+    }
+
     const tags = splitList(form.get("tags"));
     const cafe = {
       name: form.get("name"),
       naverPlaceName: form.get("naverPlaceName") || form.get("name"),
       address: form.get("address"),
-      lat: form.get("lat"),
-      lng: form.get("lng"),
-      latText: form.get("lat"),
-      lngText: form.get("lng"),
+      lat,
+      lng,
+      latText,
+      lngText,
       rating: Number(form.get("rating")),
       hoursText: form.get("hoursText"),
-      menus: parseJson(form.get("menus"), []),
+      menus,
       tags,
       facilities: splitList(form.get("facilities")),
       beanSales: tags.some((tag) => tag.includes("원두")),
@@ -47,9 +63,32 @@ export function renderAdminPanel(container, { user, profile, onSaved }) {
     };
     await saveCafeFromAdmin(cafe);
     event.currentTarget.reset();
+    alert("검증 카페가 저장되었습니다.");
     onSaved?.();
   });
 }
 
-function splitList(value) { return String(value || "").split(",").map((item) => item.trim()).filter(Boolean); }
-function parseJson(value, fallback) { try { return value ? JSON.parse(value) : fallback; } catch { return fallback; } }
+function splitList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseMenus(value) {
+  if (!String(value || "").trim()) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return null;
+    const isValid = parsed.every((item) => (
+      item
+      && typeof item === "object"
+      && typeof item.name === "string"
+      && typeof item.price === "string"
+    ));
+    return isValid ? parsed : null;
+  } catch {
+    return null;
+  }
+}
