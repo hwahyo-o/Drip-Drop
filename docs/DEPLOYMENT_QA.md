@@ -2,16 +2,29 @@
 
 GitHub Pages 배포가 완료된 뒤 실제 URL에서 아래 항목을 확인합니다.
 
+## Firebase 로그인
+
+- `https://hwahyo-o.github.io/Drip-Drop/js/firebaseConfig.js`에서 `apiKey`가 빈 문자열이 아닌지 확인합니다.
+- Google 로그인 버튼을 누르면 팝업 또는 리다이렉트 로그인이 시작되는지 확인합니다.
+- Firebase Authentication > Settings > Authorized domains에 `hwahyo-o.github.io`가 등록되어 있는지 확인합니다.
+- 로그인이 되었지만 관리자 탭이 보이지 않으면 Firestore `users/{uid}.role` 또는 bootstrap admin 이메일 설정을 확인합니다.
+
+## 공개 키 노출
+
+- 배포된 HTML/JS에서 기존 Google API key 문자열 또는 `AIza` 접두사가 의도치 않게 노출되지 않는지 확인합니다.
+- 배포된 HTML/JS에서 IPstack key `807e645c14a67c1a626e4955af39262b`가 노출되지 않는지 확인합니다.
+- GitHub Security and quality > Secret scanning alert가 `Revoked` 또는 `Rotated` 상태로 닫혔는지 확인합니다.
+
 ## 지도와 위치
 
 - 첫 접속 시 브라우저 위치 권한 요청이 표시되는지 확인합니다.
 - 위치를 허용하면 지도가 현재 위치 중심으로 이동하는지 확인합니다.
-- 현재 위치 마커가 coffee-beans 스타일 아이콘으로 표시되는지 확인합니다.
-- 지도는 일반 길찾기/위치 확인에 맞는 OpenStreetMap Roadmap 화면으로 표시되어야 합니다.
+- 현재 위치 마커가 Google Material Symbols `local_cafe` 스타일 아이콘으로 표시되는지 확인합니다.
+- 지도는 기본적으로 Leaflet + OpenStreetMap 화면으로 표시되어야 합니다.
+- `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`가 비어 있으면 Naver SDK가 로드되지 않아야 합니다.
 
 ## 검증 카페 노출
 
-- `data/cafes.seed.json`의 더미 카페가 사용자 화면에 표시되지 않는지 확인합니다.
 - Firestore에 `approved: true`와 `naverVerified: true`가 모두 있는 카페만 목록/지도/추천에 표시되는지 확인합니다.
 - 미검증 카페는 목록, 추천, 마커에 표시되지 않아야 합니다.
 
@@ -22,14 +35,16 @@ GitHub Pages 배포가 완료된 뒤 실제 URL에서 아래 항목을 확인합
 
 ## 마커 디자인
 
-- 카페 위치 마커가 coffee-maker 스타일 아이콘으로 표시되는지 확인합니다.
-- 현재 위치 마커가 coffee-beans 스타일 아이콘으로 표시되는지 확인합니다.
+- 카페 위치 마커가 Google Material Symbols `coffee_maker` 스타일 아이콘으로 표시되는지 확인합니다.
+- 현재 위치 마커가 Google Material Symbols `local_cafe` 스타일 아이콘으로 표시되는지 확인합니다.
 
 ## 관리자 모드
 
 - 관리자 계정으로 로그인했을 때 관리자 탭이 보이는지 확인합니다.
 - 관리자 화면이 일반 사용자 화면과 다르게 라인/그리드 대시보드 스타일로 표시되는지 확인합니다.
 - 카페 등록 시 `네이버 지도 실존 검증 완료`와 `사용자 화면 공개 승인` 체크가 필수인지 확인합니다.
+- 위도/경도에 숫자가 아닌 값을 입력하면 저장이 차단되는지 확인합니다.
+- 메뉴 JSON 형식이 잘못되면 저장이 차단되는지 확인합니다.
 - 두 체크가 모두 적용된 카페만 공개 화면에 반영되는지 확인합니다.
 
 ## 디자인
