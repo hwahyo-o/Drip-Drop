@@ -4,7 +4,7 @@ Drip Drop (드립 드롭)은 로스터리 카페 전용 지도 웹앱(웹 사이
 
 ## 핵심 기능
 
-- Leaflet + OpenStreetMap 기반 지도
+- Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager 지도
 - 접속 직후 현재 위치 권한 요청 및 현재 위치 중심 지도 표시
 - Google Material Symbols 기반 현재 위치/카페 마커
 - 지도 뷰 / 리스트 뷰 전환
@@ -38,9 +38,9 @@ Firebase secrets가 비어 있으면 배포는 성공하지만 Google 로그인,
 
 ## 보안
 
-`.env` 파일은 로컬 전용이며 GitHub에 올리지 않습니다. Firebase Web config는 공개 가능한 클라이언트 설정이지만, Firestore Rules와 관리자 권한 검증이 반드시 필요합니다.
+`.env` 파일은 로컬 전용이며 GitHub에 올리지 않습니다. Firebase Web config는 저장소에 직접 커밋하지 않고 GitHub Actions secrets에서 배포 시점에 생성합니다. Google 로그인용 Firebase Web API key는 Google Cloud HTTP referrer 제한과 Firestore Rules로 보호해야 합니다.
 
-지도는 기본적으로 Leaflet + OpenStreetMap을 사용하므로 지도 API key가 필요하지 않습니다. IPstack key는 브라우저 JavaScript, GitHub 저장소, GitHub Pages 배포 산출물에 포함하지 않습니다. IP 기반 위치 조회가 필요해지면 백엔드 또는 서버리스 프록시에서만 처리합니다.
+지도는 기본적으로 Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager 타일을 사용하므로 지도 API key가 필요하지 않습니다. IPstack key는 지도 타일 key가 아니며, 브라우저 JavaScript, GitHub 저장소, GitHub Pages 배포 산출물에 포함하지 않습니다. IP 기반 위치 조회가 필요해지면 백엔드 또는 서버리스 프록시에서만 처리합니다.
 
 ## 운영 문서
 
