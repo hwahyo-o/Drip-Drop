@@ -13,7 +13,15 @@ Drip Drop은 Firebase Authentication과 Firestore를 사용합니다. 아래 순
 
 ## 2. GitHub Actions Secrets
 
+현재 사이트에서 `Firebase 설정이 배포에 주입되지 않아 Google 로그인을 시작할 수 없습니다` 알림이 뜨는 이유는 배포된 `js/firebaseConfig.js`의 Firebase Web config 값이 비어 있기 때문입니다.
+
 배포된 `js/firebaseConfig.js`는 GitHub Actions secrets에서 생성됩니다. 아래 값이 Repository secrets에 없으면 사이트는 공개 지도 UI만 실행하고, Google 로그인/찜/관리자/Firestore 저장 기능은 비활성화됩니다.
+
+GitHub에서 아래 경로로 이동합니다.
+
+```text
+Repository > Settings > Secrets and variables > Actions > Repository secrets
+```
 
 필수 secrets:
 
@@ -27,7 +35,16 @@ FIREBASE_APP_ID
 FIREBASE_MEASUREMENT_ID
 ```
 
-배포 후 `https://hwahyo-o.github.io/Drip-Drop/js/firebaseConfig.js`에서 `apiKey: ""`처럼 비어 있으면 아직 secrets가 주입되지 않은 상태입니다.
+각 값은 Firebase Console > Project settings > General > Your apps > Web app configuration에서 확인합니다. 이 값들을 저장소 파일에 직접 커밋하지 말고 Repository secrets에만 등록합니다.
+
+보안 설정:
+
+- Google Cloud Console에서 Firebase API key의 Application restrictions를 `HTTP referrers`로 설정합니다.
+- 허용 referrer에 `https://hwahyo-o.github.io/*`를 추가합니다.
+- 로컬 테스트가 필요하면 `http://localhost/*` 또는 사용하는 로컬 주소만 추가합니다.
+- API restrictions는 Firebase Authentication/Firestore가 정상 동작하는 범위에서 제한합니다.
+
+배포 후 `https://hwahyo-o.github.io/Drip-Drop/js/firebaseConfig.js`에서 `apiKey: ""`처럼 비어 있으면 아직 secrets가 주입되지 않은 상태입니다. secrets 등록 후 `main`에 새 커밋을 push하거나 Actions의 `Deploy Drip Drop` workflow를 수동 실행해야 Pages가 다시 배포됩니다.
 
 ## 3. Firestore
 
@@ -42,13 +59,14 @@ FIREBASE_MEASUREMENT_ID
 
 1. 웹앱에서 Google 로그인합니다.
 2. Firestore > `users/{uid}` 문서를 찾습니다.
-3. `role` 값을 `"admin"`으로 변경합니다.
+3. `role` 값을 `"admin"`로 변경합니다.
 4. 웹앱을 새로고침하면 관리자 탭이 표시됩니다.
 
 Firebase Console의 IAM 소유자 역할은 브라우저 앱에서 직접 조회할 수 없습니다. 소유자 계정을 자동 관리자처럼 쓰려면 `docs/ADMIN_GUIDE.md`의 bootstrap admin 설정도 함께 반영해야 합니다.
 
 ## 5. 배포 후 확인 항목
 
+- `js/firebaseConfig.js`의 `apiKey`가 빈 값이 아닌지 확인합니다.
 - 지도가 표시되는지 확인합니다.
 - Google 로그인 팝업 또는 리다이렉트가 시작되는지 확인합니다.
 - 로그인 후 취향 프로필 저장이 가능한지 확인합니다.
