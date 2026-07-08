@@ -27,7 +27,6 @@ let subwayLayer;
 let cafeMarkers = [];
 let subwayMarkers = [];
 let userMarker;
-let userAccuracyCircle;
 let activeInfoWindow;
 let subwayFetchTimer;
 let lastSubwayBoundsKey = "";
@@ -196,26 +195,17 @@ function showNaverUserLocation(location) {
     icon: buildNaverIcon("user", "local_cafe", "현재 위치")
   });
   map.setCenter(position);
-  map.setZoom(16);
+  map.setZoom(17);
 }
 
 function showLeafletUserLocation(location) {
   const latLng = [location.lat, location.lng];
   if (userMarker) userMarker.remove();
-  if (userAccuracyCircle) userAccuracyCircle.remove();
-
-  userAccuracyCircle = L.circle(latLng, {
-    radius: Math.max(Number(location.accuracy) || 0, 18),
-    color: "#2d7c6f",
-    weight: 1,
-    fillColor: "#b7ddd3",
-    fillOpacity: 0.18
-  }).addTo(map);
 
   userMarker = L.marker(latLng, { icon: materialMarkerIcon("user", "local_cafe"), zIndexOffset: 1000 })
     .addTo(map)
-    .bindPopup(`현재 위치<br>정확도 약 ${Math.round(location.accuracy || 0)}m`);
-  map.setView(latLng, location.accuracy && location.accuracy <= 120 ? 17 : 15);
+    .bindPopup("현재 위치");
+  map.setView(latLng, 17);
   scheduleSubwayStationRefresh();
 }
 
@@ -237,12 +227,7 @@ function getBestBrowserLocation() {
     };
 
     const onPosition = (position) => {
-      const sample = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        timestamp: position.timestamp
-      };
+      const sample = formatLocation(position);
       samples.push(sample);
       if (sample.accuracy <= TARGET_ACCURACY_METERS) finish();
     };
@@ -256,6 +241,19 @@ function getBestBrowserLocation() {
     watchId = navigator.geolocation.watchPosition(onPosition, onError, GEOLOCATION_OPTIONS);
     timeoutId = setTimeout(finish, GEOLOCATION_SAMPLE_MS);
   });
+}
+
+function formatLocation(position) {
+  const latText = Number(position.coords.latitude).toFixed(20);
+  const lngText = Number(position.coords.longitude).toFixed(20);
+  return {
+    lat: Number(latText),
+    lng: Number(lngText),
+    latText,
+    lngText,
+    accuracy: position.coords.accuracy,
+    timestamp: position.timestamp
+  };
 }
 
 function scheduleSubwayStationRefresh() {
