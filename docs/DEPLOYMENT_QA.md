@@ -6,6 +6,7 @@ GitHub Pages 배포가 완료된 뒤 실제 URL에서 아래 항목을 확인합
 
 - `https://hwahyo-o.github.io/Drip-Drop/js/firebaseConfig.js`에서 `apiKey`가 빈 문자열이 아닌지 확인합니다.
 - `apiKey`가 비어 있으면 GitHub Repository secrets에 Firebase 값이 등록되지 않았거나, 등록 후 Pages 재배포가 아직 완료되지 않은 상태입니다.
+- `VITE_FIREBASE_*` secrets만 등록한 경우에도 workflow가 값을 주입해야 합니다.
 - Google 로그인 버튼을 누르면 팝업 또는 리다이렉트 로그인이 시작되는지 확인합니다.
 - Firebase Authentication > Settings > Authorized domains에 `hwahyo-o.github.io`가 등록되어 있는지 확인합니다.
 - 로그인이 되었지만 관리자 탭이 보이지 않으면 Firestore `users/{uid}.role` 또는 bootstrap admin 이메일 설정을 확인합니다.
@@ -22,8 +23,13 @@ GitHub Pages 배포가 완료된 뒤 실제 URL에서 아래 항목을 확인합
 - 첫 접속 시 브라우저 위치 권한 요청이 표시되는지 확인합니다.
 - 위치를 허용하면 지도가 현재 위치 중심으로 이동하는지 확인합니다.
 - 현재 위치 마커가 Google Material Symbols `local_cafe` 스타일 아이콘으로 표시되는지 확인합니다.
+- 현재 위치 주변에 정확도 반경 원이 표시되는지 확인합니다.
+- 현재 위치 팝업에 정확도 값이 미터 단위로 표시되는지 확인합니다.
+- 실제 위치와 차이가 크면 브라우저/운영체제 위치 권한, VPN, 데스크톱 네트워크 위치 추정 상태를 확인합니다.
 - 지도는 기본적으로 Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager 화면으로 표시되어야 합니다.
 - 지도 색감이 밝고 부드러운 도로 지도 형태로 보이는지 확인합니다.
+- 줌 레벨 13 이상에서 지하철역 또는 지하철 출입구가 있으면 `subway` 아이콘 마커가 표시되는지 확인합니다.
+- Network 탭에서 Overpass API 요청 실패가 발생해도 기본 지도와 카페 마커가 계속 동작하는지 확인합니다.
 - `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`가 비어 있으면 Naver SDK가 로드되지 않아야 합니다.
 - Network 탭에서 지도 타일 요청에 IPstack key가 포함되지 않는지 확인합니다.
 
