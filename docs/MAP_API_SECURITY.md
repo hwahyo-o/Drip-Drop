@@ -7,7 +7,8 @@ Drip Drop의 기본 지도는 Leaflet + OpenStreetMap 데이터 기반 타일입
 ## Current Decision
 
 - 기본 지도: Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager raster tile
-- 현재 위치: Browser Geolocation API
+- 현재 위치: Browser Geolocation API의 high accuracy 모드와 다중 샘플링
+- 지하철역 표시: OpenStreetMap Overpass API 기반 보조 레이어
 - Naver 지도 스타일: 기본 비활성화
 - IPstack: 현재 클라이언트 앱에서 사용하지 않음
 - 지도 타일 API key: 사용하지 않음
@@ -21,6 +22,34 @@ https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png
 ```
 
 이 타일은 부드러운 색감, 명확한 도로 표현, 낮은 시각적 밀도 때문에 NaverStyleMapTypeOption의 일반 도로 지도에 더 가까운 경험을 제공합니다. API key가 필요하지 않으므로 GitHub Pages 정적 배포에 적합합니다.
+
+## 지도 최신성
+
+CARTO Voyager는 OpenStreetMap 데이터를 기반으로 합니다. 따라서 네이버 지도처럼 자체 수집 데이터가 실시간에 가깝게 반영되는 구조는 아닙니다. 최신성은 OpenStreetMap 편집 데이터와 CARTO 타일 갱신 주기에 따라 달라집니다.
+
+운영 기준:
+
+- 카페 위치와 주소는 관리자 검증 데이터가 우선입니다.
+- 도로/건물/지하철역 배경 정보는 OpenStreetMap 데이터 갱신 상태를 따릅니다.
+- 네이버 지도와 동일한 최신성을 반드시 요구하는 화면은 네이버 지도 링크 또는 별도 Naver Maps SDK 사용 검토가 필요합니다.
+- 단, Naver Maps SDK의 브라우저 client id는 공개 식별자이므로 "키 절대 비노출" 정책과 충돌할 수 있습니다.
+
+## 지하철역 표시
+
+지하철역은 지도 확대 레벨 13 이상에서 현재 보이는 영역을 기준으로 Overpass API에서 아래 데이터를 조회해 표시합니다.
+
+```text
+railway=station + station=subway
+railway=subway_entrance
+```
+
+이 레이어도 API key가 필요하지 않습니다. 공용 Overpass API가 일시적으로 느리거나 제한되면 지하철역 레이어만 표시되지 않을 수 있고, 기본 지도와 카페 마커는 계속 동작해야 합니다.
+
+## 현재 위치 정확도
+
+현재 위치는 브라우저 Geolocation API에서 가져옵니다. 앱은 단일 좌표를 바로 쓰지 않고 짧은 시간 동안 여러 측정값을 받아 정확도 값이 가장 낮은 좌표를 선택합니다. 지도에는 현재 위치 마커와 정확도 반경을 함께 표시합니다.
+
+위치가 계속 어긋나는 경우는 브라우저/운영체제 위치 권한, Wi-Fi 위치 데이터, VPN, 데스크톱 유선 네트워크의 IP 기반 추정 한계 때문일 수 있습니다. 웹앱은 사용자가 허용한 브라우저 위치값보다 더 정확한 실제 좌표를 임의로 알 수 없습니다.
 
 ## Naver Maps JavaScript SDK
 
