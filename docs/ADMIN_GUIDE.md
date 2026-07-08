@@ -36,17 +36,16 @@ function bootstrapAdminEmails() {
 - Firebase Console > Authentication > Sign-in method에서 Google 제공업체를 활성화합니다.
 - Firebase Console > Authentication > Settings > Authorized domains에 배포 도메인을 추가합니다.
   - 예: `hwahyo-o.github.io`
+- GitHub repository secrets에 `docs/FIREBASE_SETUP.md`의 Firebase 배포 secrets를 등록합니다.
 - 팝업 로그인이 막히는 브라우저에서는 앱이 자동으로 리다이렉트 로그인으로 전환합니다.
 
-## Naver 지도 설정
+## 지도 설정
 
-`js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`에 Naver Maps JavaScript API의 `ncpKeyId`를 입력하면 Naver 지도 SDK를 동적으로 불러옵니다.
+기본 지도는 Leaflet + OpenStreetMap입니다. 이 구성은 브라우저에 지도 API key를 배포하지 않아도 동작하므로 GitHub Pages 정적 배포에 가장 적합합니다.
 
-```js
-export const NAVER_MAP_CLIENT_ID = "YOUR_NCP_KEY_ID";
-```
+Naver Maps JavaScript SDK를 사용하려면 `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`에 `ncpKeyId`를 넣을 수 있지만, 이 값은 브라우저에서 보이는 공개 클라이언트 식별자입니다. "지도 관련 키가 배포 화면에 절대 노출되면 안 된다"는 정책을 우선하면 비워 두어야 합니다.
 
-키가 비어 있거나 SDK 로드에 실패하면 기존 Leaflet + OpenStreetMap 지도로 자동 전환됩니다.
+IPstack key는 관리자 페이지나 브라우저 JS에 입력하지 않습니다. IP 기반 위치 조회가 필요해지면 백엔드 또는 서버리스 프록시에서만 사용합니다.
 
 ## 카페 등록 기준
 
