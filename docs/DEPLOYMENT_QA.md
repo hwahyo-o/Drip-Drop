@@ -5,23 +5,27 @@ GitHub Pages 배포가 완료된 뒤 실제 URL에서 아래 항목을 확인합
 ## Firebase 로그인
 
 - `https://hwahyo-o.github.io/Drip-Drop/js/firebaseConfig.js`에서 `apiKey`가 빈 문자열이 아닌지 확인합니다.
+- `apiKey`가 비어 있으면 GitHub Repository secrets에 Firebase 값이 등록되지 않았거나, 등록 후 Pages 재배포가 아직 완료되지 않은 상태입니다.
 - Google 로그인 버튼을 누르면 팝업 또는 리다이렉트 로그인이 시작되는지 확인합니다.
 - Firebase Authentication > Settings > Authorized domains에 `hwahyo-o.github.io`가 등록되어 있는지 확인합니다.
 - 로그인이 되었지만 관리자 탭이 보이지 않으면 Firestore `users/{uid}.role` 또는 bootstrap admin 이메일 설정을 확인합니다.
 
 ## 공개 키 노출
 
-- 배포된 HTML/JS에서 기존 Google API key 문자열 또는 `AIza` 접두사가 의도치 않게 노출되지 않는지 확인합니다.
+- GitHub 저장소 코드에 Firebase Web API key 또는 기존 Google API key 문자열이 직접 커밋되지 않았는지 확인합니다.
 - 배포된 HTML/JS에서 IPstack key `807e645c14a67c1a626e4955af39262b`가 노출되지 않는지 확인합니다.
 - GitHub Security and quality > Secret scanning alert가 `Revoked` 또는 `Rotated` 상태로 닫혔는지 확인합니다.
+- Firebase 로그인을 활성화한 경우 배포 산출물의 `js/firebaseConfig.js`에는 제한된 Firebase Web API key가 보일 수 있습니다. 이 값은 Google Cloud HTTP referrer 제한과 Firestore Rules로 보호합니다.
 
 ## 지도와 위치
 
 - 첫 접속 시 브라우저 위치 권한 요청이 표시되는지 확인합니다.
 - 위치를 허용하면 지도가 현재 위치 중심으로 이동하는지 확인합니다.
 - 현재 위치 마커가 Google Material Symbols `local_cafe` 스타일 아이콘으로 표시되는지 확인합니다.
-- 지도는 기본적으로 Leaflet + OpenStreetMap 화면으로 표시되어야 합니다.
+- 지도는 기본적으로 Leaflet + OpenStreetMap 데이터 기반 CARTO Voyager 화면으로 표시되어야 합니다.
+- 지도 색감이 밝고 부드러운 도로 지도 형태로 보이는지 확인합니다.
 - `js/mapConfig.js`의 `NAVER_MAP_CLIENT_ID`가 비어 있으면 Naver SDK가 로드되지 않아야 합니다.
+- Network 탭에서 지도 타일 요청에 IPstack key가 포함되지 않는지 확인합니다.
 
 ## 검증 카페 노출
 
