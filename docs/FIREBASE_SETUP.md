@@ -15,7 +15,7 @@ Drip Drop은 Firebase Authentication과 Firestore를 사용합니다. 아래 순
 
 현재 사이트에서 `Firebase 설정이 배포에 주입되지 않아 Google 로그인을 시작할 수 없습니다` 알림이 뜨는 이유는 배포된 `js/firebaseConfig.js`의 Firebase Web config 값이 비어 있기 때문입니다.
 
-배포된 `js/firebaseConfig.js`는 GitHub Actions secrets에서 생성됩니다. Repository secrets에 값이 없거나 workflow가 등록된 secret 이름을 읽지 못하면 사이트는 공개 지도 UI만 실행하고, Google 로그인/찜/관리자/Firestore 저장 기능은 비활성화됩니다.
+배포된 `js/firebaseConfig.js`는 GitHub Actions secrets에서 생성됩니다. Repository secrets에 `VITE_FIREBASE_*` 값이 없거나, 등록 후 Pages 재배포가 완료되지 않으면 사이트는 공개 지도 UI만 실행하고 Google 로그인/찜/관리자/Firestore 저장 기능은 비활성화됩니다.
 
 GitHub에서 아래 경로로 이동합니다.
 
@@ -23,7 +23,7 @@ GitHub에서 아래 경로로 이동합니다.
 Repository > Settings > Secrets and variables > Actions > Repository secrets
 ```
 
-권장 secrets 이름:
+필수 secrets 이름:
 
 ```text
 VITE_FIREBASE_API_KEY
@@ -33,18 +33,6 @@ VITE_FIREBASE_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
 VITE_FIREBASE_MEASUREMENT_ID
-```
-
-현재 배포 workflow는 호환성을 위해 아래 이름도 함께 지원합니다.
-
-```text
-FIREBASE_API_KEY
-FIREBASE_AUTH_DOMAIN
-FIREBASE_PROJECT_ID
-FIREBASE_STORAGE_BUCKET
-FIREBASE_MESSAGING_SENDER_ID
-FIREBASE_APP_ID
-FIREBASE_MEASUREMENT_ID
 ```
 
 각 값은 Firebase Console > Project settings > General > Your apps > Web app configuration에서 확인합니다. 이 값들을 저장소 파일에 직접 커밋하지 말고 Repository secrets에만 등록합니다.
