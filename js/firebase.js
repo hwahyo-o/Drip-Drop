@@ -2,9 +2,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/fireba
 import { getAnalytics, isSupported as isAnalyticsSupported } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
 import {
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   getRedirectResult,
   onAuthStateChanged,
+  signInAnonymously,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut
@@ -62,6 +65,7 @@ export { firebaseConfig };
 export {
   addDoc,
   collection,
+  createUserWithEmailAndPassword,
   deleteDoc,
   doc,
   getDoc,
@@ -74,6 +78,8 @@ export {
   query,
   serverTimestamp,
   setDoc,
+  signInAnonymously,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut,
