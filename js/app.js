@@ -1,4 +1,15 @@
-import { getAuthErrorMessage, getCurrentProfile, getCurrentUser, loginWithGoogle, logout, saveUserTasteProfile, watchAuth } from "./auth.js";
+import {
+  getAuthErrorMessage,
+  getCurrentProfile,
+  getCurrentUser,
+  loginAsGuest,
+  loginWithEmail,
+  loginWithGoogle,
+  logout,
+  registerWithEmail,
+  saveUserTasteProfile,
+  watchAuth
+} from "./auth.js";
 import { buildNaverMapUrl, isCafeOpenNow, loadCafes } from "./cafeStore.js";
 import { filterCafes } from "./search.js";
 import { initMap, locateUser, renderCafeMarkers } from "./map.js";
@@ -18,7 +29,8 @@ const state = {
   profile: null,
   favorites: [],
   userLocation: null,
-  view: "map"
+  view: "map",
+  notificationPermission: "default"
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -28,11 +40,11 @@ document.addEventListener("DOMContentLoaded", boot);
 async function boot() {
   bindEvents();
   await initMap({ onCafeSelect: selectCafe });
-  requestLocationOnLanding();
+  requestLandingPermissions();
   state.cafes = await loadCafes();
   applyFilters();
 
-  watchAuth(async (user, profile) => {
+  await watchAuth(async (user, profile) => {
     state.user = user;
     state.profile = profile;
     state.favorites = user ? await loadFavorites(user.uid) : [];
@@ -46,6 +58,7 @@ function bindEvents() {
     event.preventDefault();
     state.keyword = $("#searchInput").value;
     applyFilters();
+    location.hash = "search";
   });
 
   document.querySelectorAll("[data-filter]").forEach((input) => {
@@ -58,12 +71,17 @@ function bindEvents() {
 
   $("#mapViewButton").addEventListener("click", () => setView("map"));
   $("#listViewButton").addEventListener("click", () => setView("list"));
-  $("#loginButton").addEventListener("click", handleLogin);
+  $("#loginButton").addEventListener("click", openAuthModal);
+  $("#closeAuthModal").addEventListener("click", closeAuthModal);
   $("#logoutButton").addEventListener("click", logout);
-  $("#locateButton").addEventListener("click", requestLocationOnLanding);
-  $("#allowLocationButton").addEventListener("click", requestLocationOnLanding);
+  $("#locateButton").addEventListener("click", requestLandingPermissions);
+  $("#allowLocationButton").addEventListener("click", requestLandingPermissions);
   $("#laterLocationButton").addEventListener("click", hideLocationPrompt);
   $("#dismissLocationPrompt").addEventListener("click", hideLocationPrompt);
+  $("#emailLoginForm").addEventListener("submit", handleEmailLogin);
+  $("#googleLoginButton").addEventListener("click", () => runAuthAction(loginWithGoogle, "Google 로그인 중..."));
+  $("#guestLoginButton").addEventListener("click", () => runAuthAction(loginAsGuest, "게스트 로그인 중..."));
+  $("#registerButton").addEventListener("click", handleRegister);
   $("#saveProfileButton").addEventListener("click", async () => {
     await saveUserTasteProfile(readProfileForm());
     alert("프로필을 저장했습니다.");
@@ -77,20 +95,60 @@ function bindEvents() {
       renderDrawer(button.dataset.drawerTab);
     });
   });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAuthModal();
+  });
 }
 
-async function handleLogin() {
-  const button = $("#loginButton");
-  try {
-    button.disabled = true;
-    button.textContent = "로그인 중...";
-    await loginWithGoogle();
-  } catch (error) {
-    alert(getAuthErrorMessage(error));
-  } finally {
-    button.disabled = false;
-    if (!state.user) button.textContent = "Google 로그인";
+async function handleEmailLogin(event) {
+  event.preventDefault();
+  const email = $("#authEmailInput").value.trim();
+  const password = $("#authPasswordInput").value;
+  await runAuthAction(() => loginWithEmail(email, password), "로그인 중...");
+}
+
+async function handleRegister() {
+  const email = $("#authEmailInput").value.trim();
+  const password = $("#authPasswordInput").value;
+  if (!email || !password) {
+    setAuthStatus("회원가입할 이메일과 비밀번호를 입력해 주세요.");
+    return;
   }
+  await runAuthAction(() => registerWithEmail(email, password), "회원가입 중...");
+}
+
+async function runAuthAction(action, pendingText) {
+  const buttons = document.querySelectorAll("#authModal button, #emailLoginForm button");
+  try {
+    buttons.forEach((button) => { button.disabled = true; });
+    setAuthStatus(pendingText);
+    await action();
+    setAuthStatus("로그인되었습니다.");
+    closeAuthModal();
+  } catch (error) {
+    setAuthStatus(getAuthErrorMessage(error));
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+async function requestLandingPermissions() {
+  await requestNotificationPermission();
+  await requestLocationOnLanding();
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    try {
+      state.notificationPermission = await Notification.requestPermission();
+    } catch (error) {
+      console.warn("알림 권한 요청에 실패했습니다.", error);
+    }
+    return;
+  }
+  state.notificationPermission = Notification.permission;
 }
 
 async function requestLocationOnLanding() {
@@ -103,6 +161,21 @@ async function requestLocationOnLanding() {
     const copy = $("#locationPrompt p");
     if (copy) copy.textContent = "위치 권한이 거부되었거나 사용할 수 없습니다. 검색으로 지역을 찾을 수 있어요.";
   }
+}
+
+function openAuthModal() {
+  $("#authModal")?.classList.remove("hidden");
+  setAuthStatus("");
+  setTimeout(() => $("#authEmailInput")?.focus(), 0);
+}
+
+function closeAuthModal() {
+  $("#authModal")?.classList.add("hidden");
+}
+
+function setAuthStatus(message) {
+  const status = $("#authStatus");
+  if (status) status.textContent = message || "";
 }
 
 function hideLocationPrompt() {
@@ -130,7 +203,7 @@ function renderAuth() {
   $("#adminTabButton").classList.toggle("hidden", state.profile?.role !== "admin");
 
   if (state.user) {
-    $("#userSummary").textContent = `${state.user.displayName || state.user.email}님`;
+    $("#userSummary").textContent = `${state.profile?.displayName || state.user.displayName || state.user.email || "게스트"}님`;
     fillProfileForm(state.profile);
   }
 }
@@ -205,7 +278,8 @@ function bindCardActions() {
   document.querySelectorAll("[data-favorite-cafe]").forEach((button) => {
     button.addEventListener("click", async () => {
       if (!state.user) {
-        alert("찜 기능은 로그인이 필요합니다.");
+        openAuthModal();
+        setAuthStatus("찜 기능은 로그인이 필요합니다.");
         return;
       }
       const cafeId = button.dataset.favoriteCafe;
@@ -270,7 +344,7 @@ function renderDrawer(tab) {
     return;
   }
   if (tab === "community") {
-    content.innerHTML = `<div class="panel"><h2>커뮤니티</h2><p class="muted">게시글, 댓글, 대댓글, 공감, 공유 기능을 위한 공간입니다.</p></div>`;
+    content.innerHTML = renderCommunityShell();
     return;
   }
   if (tab === "reviews") {
@@ -278,7 +352,7 @@ function renderDrawer(tab) {
     return;
   }
   if (tab === "alerts") {
-    content.innerHTML = `<div class="panel"><h2>알림</h2><p class="muted">내 글, 댓글, 리뷰에 대한 반응 알림이 이곳에 표시됩니다.</p></div>`;
+    content.innerHTML = `<div class="panel"><h2>알림</h2><p class="muted">알림 권한: ${escapeHtml(state.notificationPermission || "default")}</p><p class="muted">내 글, 댓글, 리뷰에 대한 반응 알림이 이곳에 표시됩니다.</p></div>`;
     return;
   }
   if (tab === "report") {
@@ -296,6 +370,19 @@ function renderDrawer(tab) {
       }
     });
   }
+}
+
+function renderCommunityShell() {
+  return `
+    <div class="panel community-shell">
+      <div class="section-heading"><div><p class="eyebrow">Community</p><h2>커뮤니티</h2></div></div>
+      <div class="line-diagram" aria-hidden="true"><span>검색</span><i></i><span>포스팅</span><i></i><span>댓글</span><i></i><span>공감</span></div>
+      <div class="community-grid">
+        <section><h3>검색</h3><input placeholder="카페, 원두, 게시글 검색"></section>
+        <section><h3>포스팅</h3><p class="muted">카페 태그, 별점, 텍스트 에디터, 이미지 첨부, 저장 흐름을 배치할 영역입니다.</p></section>
+        <section><h3>게시글 목록</h3><p class="muted">상세 보기, 댓글 작성/수정/삭제/신고, 공감과 공유 기능이 들어갈 카드 영역입니다.</p></section>
+      </div>
+    </div>`;
 }
 
 function facilityLabel(value) {
